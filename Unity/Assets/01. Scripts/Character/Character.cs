@@ -7,17 +7,39 @@ public class Character : MonoBehaviour
     [SerializeField] AnimationController _animationController;
     [SerializeField] List<GameObject> _wayPointList;
 
+    [SerializeField] bool _isPlayer = false;
+
     int _meetCount = 0;
 
     void Awake()
     {
         _characterController = gameObject.GetComponent<CharacterController>();
+
+        {
+
+
+            if(0<transform.childCount)
+            {
+                Transform childTransform = transform.GetChild(0);
+                childTransform.gameObject.AddComponent<AnimationController>();
+                _animationController = childTransform.gameObject.GetComponent<AnimationController>();
+            }
+        }
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        _stateDic.Add(eState.IDLE, new IdleState());
+        if(true==_isPlayer)
+        {
+            _stateDic.Add(eState.IDLE, new PlayerIdleState());
+        }
+        else
+        {
+            _stateDic.Add(eState.IDLE, new IdleState());
+        }
+        
+        
         _stateDic.Add(eState.WAIT, new WaitState());
         _stateDic.Add(eState.KICK, new KickState());
         _stateDic.Add(eState.WALK, new WalkState());
@@ -40,6 +62,25 @@ public class Character : MonoBehaviour
     {
         if(eState.DEATH != _stateType)
         {
+            //input 처리
+            if(true==_isPlayer)
+            {
+                if (true == Input.GetMouseButtonUp(0))
+                {
+                    Vector2 clickPos = Input.mousePosition;
+
+                    Ray ray = Camera.main.ScreenPointToRay(clickPos);
+                    RaycastHit hitInfo;
+                    if(true == Physics.Raycast(ray, out hitInfo, 1000.0f, 1<<LayerMask.NameToLayer("Ground")))
+                    {
+                        Vector3 destPos = hitInfo.point;
+                        //Debug.Log("WorldPos : " + destPos);
+                        SetDestination(destPos);
+                        ChangeState(Character.eState.WALK);
+                    }
+                }
+            }
+
             UpdateState();
             UpdateMove();
             UpdateDeath();
